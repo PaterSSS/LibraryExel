@@ -3,6 +3,7 @@ out/
 !**/src/main/**/out/
 !**/src/test/**/out/
 todo.txt
+.idea
 
 ### Eclipse ###
 .apt_generated

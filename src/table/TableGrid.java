@@ -14,20 +14,26 @@ public class TableGrid {
 
 
     private final List<LongestItem> listOfMaxLength = new ArrayList<>();
+    private List<String> gridOfTable = new ArrayList<>();
     private int maxNumberOfColumns;
     private static final int DEFAULT_GAP = 5;
     private static final String DEFAULT_DELIMITER = ",";
+
     private class LongestItem {
         int length;
         boolean hasNextItem;
+
         public LongestItem(int length, boolean hasNextItem) {
             this.hasNextItem = hasNextItem;
             this.length = length;
         }
     }
+
     public TableGrid(List<List<Cell>> list) {
         updateMaxLength(list);
+        makeGridOfTable(list);
     }
+
     private void updateMaxLength(List<List<Cell>> table) {
         int maxColumnCount = Math.max(table.get(0).size(), 0);
 
@@ -50,35 +56,36 @@ public class TableGrid {
         }
         maxNumberOfColumns = maxColumnCount;
     }
-    List<String> makeGridOfTable(List<List<Cell>> table) {
-        StringBuilder stringBuilderForNumeration = new StringBuilder("\033[42m%4s");
-        List<String> resultList = new LinkedList<>();
-        for (int i = 0; i < maxNumberOfColumns - 1; i++) {
-            int gap = DEFAULT_GAP + listOfMaxLength.get(i).length + ((listOfMaxLength.get(i).hasNextItem)? 1: 0);
-            stringBuilderForNumeration.append("%").append(gap).append("s");
-        }
-        stringBuilderForNumeration.append("\033[0m\n");
-        resultList.add(stringBuilderForNumeration.toString());
+
+    private void  makeGridOfTable(List<List<Cell>> table) {
+        makeTitleOfTable(table);
+        int gapBeforeFirstColumn = (int) (Math.log10(table.size()) + 1) - 1;
         int rowNumeration = 1;
+        int base = 10;
         for (List<Cell> row : table) {
+            if (rowNumeration % base == 0) {
+                base *= 10;
+                gapBeforeFirstColumn -= 1;
+            }
             StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.append(YELLOW_BACKGROUND).append(rowNumeration++).append(".").append(RESET).append(" ").append("%s");
+            stringBuilder.append(YELLOW_BACKGROUND).append(rowNumeration++).append(".").append(createSpaces(gapBeforeFirstColumn))
+                    .append(RESET).append(" ").append("%s");
             for (int i = 1; i < row.size(); i++) {
                 if (i == 1 && !row.get(0).getData().isEmpty()) {
                     stringBuilder.append(",");
                 }
                 int gap = listOfMaxLength.get(i - 1).length - row.get(i - 1).getLength();
-                int marginLeft = gap + ((listOfMaxLength.get(i - 1).hasNextItem) ? 0 : -1)  +
+                int marginLeft = gap + ((listOfMaxLength.get(i - 1).hasNextItem) ? 0 : -1) +
                         DEFAULT_GAP + row.get(i).getLength() + ((checkRow(row, row.get(i).getData())) ? 1 : 0);
                 stringBuilder.append("%").append(marginLeft).append("s")
                         .append(((i == (row.size() - 1)) || row.get(i).getData().isEmpty()) ? " " : DEFAULT_DELIMITER);
             }
             stringBuilder.append("\n");
-            resultList.add(stringBuilder.toString());
+            gridOfTable.add(stringBuilder.toString());
             stringBuilder.delete(2, stringBuilder.length());
         }
-        return resultList;
     }
+
     private boolean checkRow(List<Cell> row, String item) {
         int i = 0;
         while (row.get(i).getData().isEmpty()) {
@@ -89,7 +96,54 @@ public class TableGrid {
         }
         return row.get(i).getData().equals(item);
     }
+
+    private String createSpaces(int spaces) {
+        return " ".repeat(Math.max(0, spaces));
+    }
+    private void makeTitleOfTable(List<List<Cell>> table) {
+        int gapBeforeFirstColumn = (int) (Math.log10(table.size()) + 1) + 3;
+        StringBuilder stringBuilderForNumeration = new StringBuilder(GREEN_BACKGROUND + "%" + gapBeforeFirstColumn + "s");
+        int countWords = 0;
+        for (int i = 0; i < maxNumberOfColumns - 1; i++) {
+
+            int gap = DEFAULT_GAP + listOfMaxLength.get(i).length + ((listOfMaxLength.get(i).hasNextItem) ? 1 : 0) +
+                    ((i == 24)? 1: 0) + ((i == 700)? 1: 0);
+            stringBuilderForNumeration.append("%").append(gap).append("s");
+        }
+        int words = 1;
+        if (maxNumberOfColumns > 702) {
+            words = 3;
+        } else if (maxNumberOfColumns > 26) {
+            words = 2;
+        }
+        int spaces = listOfMaxLength.get(listOfMaxLength.size() - 1).length - words;
+        stringBuilderForNumeration.append(createSpaces(spaces)).append(RESET).append("\n");
+        gridOfTable.add(stringBuilderForNumeration.toString());
+    }
+//    private static int getCountOfWordsInTitle(int columns) {
+//        double tmp = columns;
+//        int count = 1;
+//        int base = 26;
+//        while(true) {
+//            tmp /= base;
+//            if (tmp <= 1) {
+//                break;
+//            } else {
+//                base *= base;
+//                count++;
+//            }
+//        }
+//        return count;
+//    }
     public int getMaxNumberOfColumns() {
         return maxNumberOfColumns;
+    }
+
+    public static void main(String[] args) {
+//        System.out.println(getCountOfWordsInTitle(703));
+    }
+
+    public List<String> getGridOfTable() {
+        return gridOfTable;
     }
 }

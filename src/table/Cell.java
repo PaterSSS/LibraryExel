@@ -1,12 +1,12 @@
 package table;
 
 import java.time.LocalDate;
+import java.util.function.Function;
 
 public class Cell implements Comparable<Cell> {
     private String data;
     private int length;
     private TypeOfData type;
-
     public Cell(String data) {
         this.data = data;
         setParams();

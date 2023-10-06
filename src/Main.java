@@ -1,3 +1,8 @@
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
+import java.util.function.Predicate;
+
 public class Main {
     public static final String ANSI_BLACK_BACKGROUND = "\u001B[40m";
     public static final String ANSI_RED_BACKGROUND = "\u001B[41m";
@@ -17,8 +22,5 @@ public class Main {
     public static final String ANSI_CYAN = "\u001B[36m";
     public static final String ANSI_WHITE = "\u001B[37m";
     public static void main(String[] args) {
-        System.out.println(ANSI_WHITE_BACKGROUND + "This text has a green background but default text!" + ANSI_RESET);
-        System.out.println(ANSI_RED + "This text has red text but a default background!" + ANSI_RESET);
-        System.out.println(ANSI_GREEN_BACKGROUND + ANSI_RED + "This text has a green background and red text!" + ANSI_RESET);
     }
 }
