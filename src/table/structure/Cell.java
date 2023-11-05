@@ -1,7 +1,6 @@
-package table;
+package table.structure;
 
 import java.time.LocalDate;
-import java.util.function.Function;
 
 public class Cell implements Comparable<Cell> {
     private String data;

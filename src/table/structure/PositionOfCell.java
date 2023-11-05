@@ -1,4 +1,4 @@
-package table;
+package table.structure;
 
 public class PositionOfCell {
     private int x;

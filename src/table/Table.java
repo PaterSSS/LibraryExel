@@ -1,39 +1,54 @@
 package table;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
+import table.structure.Cell;
+import table.structure.PositionOfCell;
+
+import java.io.*;
 import java.util.*;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
 
 public class Table {
-    private List<List<Cell>> table = new ArrayList<>();
-     private TableGrid grid;
-     private static final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private HashMap<PositionOfCell, Cell> table = new HashMap<>();
+    private TableGrid grid;
+    private List<Integer> gridOfRowsAndColumns = new ArrayList<>();
+
+    public Table(List<List<String>> list) {
+        for (int i = 0; i < list.size(); i++) {
+            int iter = 0;
+            for (int j = 0; j < list.get(i).size(); j++) {
+                table.put(new PositionOfCell(j, i), new Cell(list.get(i).get(j)));
+                iter = j;
+            }
+            gridOfRowsAndColumns.add(iter);
+        }
+        grid = new TableGrid(table, gridOfRowsAndColumns);
+    }
+
+    public Table() {
+    }
 
     public void readTableFromConsole() {
-        Scanner scanner = new Scanner(System.in);
-        System.out.println("Enter your table: ");
-        try {
+        try (Scanner scanner = new Scanner(System.in)) {
+            System.out.println("Enter your table: ");
+            int rowIterator = 0;
+
             String line;
             while (scanner.hasNextLine() && !(line = scanner.nextLine()).isEmpty()) {
                 String[] tmp = line.split("[ ,;]");
-                List<Cell> cellList = new ArrayList<>();
+                gridOfRowsAndColumns.add(tmp.length);
+                int columnIterator = 0;
                 for (String item : tmp) {
-                    cellList.add(new Cell(item));
+                    table.put(new PositionOfCell(columnIterator++, rowIterator), new Cell(item));
                 }
-                table.add(cellList);
+                rowIterator++;
             }
-        } finally {
-            scanner.close();
         }
-        grid = new TableGrid(table);
+        grid = new TableGrid(table, gridOfRowsAndColumns);
     }
+
     public void printTableInConsole() {
         List<String> listOfPaddings = grid.getGridOfTable();
         List<String> colNumeration = generateStrings(grid.getMaxNumberOfColumns());
-
         System.out.printf(listOfPaddings.get(0), colNumeration.toArray());
         listOfPaddings.remove(0);
         int i = 0;
@@ -43,6 +58,15 @@ public class Table {
         }
         System.out.println();
     }
+
+    private List<String> getRow(int rowNumber) {
+        List<String> result = new ArrayList<>();
+        for (int i = 0; i < gridOfRowsAndColumns.get(rowNumber); i++) {
+            result.add(table.get(new PositionOfCell(i, rowNumber)).getData());
+        }
+        return result;
+    }
+
     private List<String> generateStrings(int count) {
         List<String> strings = new ArrayList<>();
 
@@ -57,104 +81,38 @@ public class Table {
         StringBuilder builder = new StringBuilder();
 
         while (n > 0) {
-            int remainder = (n - 1) % 26; // Определение остатка от деления на 26
-            char ch = (char) ('a' + remainder); // Восстановление символа с помощью остатка
-
-            builder.insert(0, ch); // Вставка символа в начало строки
-            n = (n - 1) / 26; // Переход к следующему разряду
+            int remainder = (n - 1) % 26;
+            char ch = (char) ('a' + remainder);
+            builder.insert(0, ch);
+            n = (n - 1) / 26;
         }
 
         return builder.toString();
     }
-    private List<String> getRow(int rowNumber) {
-        List<String> resultList = new ArrayList<>();
-        for (int i = 0; i < table.get(rowNumber).size(); i++) {
-            resultList.add(table.get(rowNumber).get(i).getData());
-        }
-        return resultList;
-    }
-    public void sortTableByRows() {
-        for (List<Cell> row : table) {
-            Collections.sort(row);
-        }
-        grid = new TableGrid(table);
-    }
-    public void sortTableByColumns() {
-        for (int columnIterator = 0; columnIterator < grid.getMaxNumberOfColumns(); columnIterator++) {
-            List<Cell> column = new ArrayList<>();
-            for (List<Cell> row : table) {
-                if (columnIterator >= row.size()) {
-                    continue;
+
+    public void readTableFromCSVFile(String pathToFile) {
+        try (Scanner scanner = new Scanner(new File(pathToFile))) {
+            int rowIterator = 0;
+            String line;
+            while (scanner.hasNextLine() && !(line = scanner.nextLine()).isEmpty()) {
+                String[] tmp = line.split("[ ,;]");
+                int columnIterator = 0;
+                gridOfRowsAndColumns.add(tmp.length);
+                for (String item : tmp) {
+                    table.put(new PositionOfCell(columnIterator++, rowIterator), new Cell(item));
                 }
-                column.add(row.get(columnIterator));
+                rowIterator++;
             }
-            Collections.sort(column);
-            int i = 0;
-            for (List<Cell> row : table) {
-                if (columnIterator >= row.size()) {
-                    continue;
-                }
-                row.set(columnIterator, column.get(i++));
-            }
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
         }
+        grid = new TableGrid(table, gridOfRowsAndColumns);
     }
 
-    private <T> List<String> selectDataByRows(Predicate<T> predicate, String regex, Function<String, T> converter) {
-
-        List<String> listOfStrings = new ArrayList<>();
-        for (List<Cell> list: table) {
-            for (Cell item: list) {
-                if (!item.getData().matches(regex)) {
-                    continue;
-                }
-                T tmp = converter.apply(item.getData());
-                if (predicate.test(tmp)) {
-                    listOfStrings.add(item.getData());
-                }
-            }
-        }
-        return listOfStrings;
-    }
-    private <T> List<String> selectDataByColumns(Predicate<T> predicate, String regex, Function<String, T> converter) {
-        List<String> stringList = new ArrayList<>();
-        for (int columnIterator = 0; columnIterator < grid.getMaxNumberOfColumns(); columnIterator++) {
-            for (List<Cell> row : table) {
-                if (columnIterator >= row.size()) {
-                    continue;
-                }
-                String data = row.get(columnIterator).getData();
-                if (!data.matches(regex)) {
-                    continue;
-                }
-                T tmp = converter.apply(data);
-                if (predicate.test(tmp)) {
-                    stringList.add(data);
-                }
-            }
-        }
-        return stringList;
-    }
-    public List<String> selectNumberData(Predicate<Double> predicate, boolean searchingInRows) {
-        return (searchingInRows) ? selectDataByRows(predicate,"-?\\d+([,.])?\\d*", Double::parseDouble):
-                selectDataByColumns(predicate,"-?\\d+([,.])?\\d*", Double::parseDouble);
-    }
-    public List<String> selectDateData(Predicate<LocalDate> predicate, boolean searchingInRows) {
-        return (searchingInRows) ? selectDataByRows(predicate, "\\d{2}[./]\\d{2}[./]\\d{4}", Table::convertDate):
-                selectDataByColumns(predicate, "\\d{2}[./]\\d{2}[./]\\d{4}", Table::convertDate);
-    }
-    public List<String> selectStringData(Predicate<String> predicate, boolean searchingInRows) {
-        return (searchingInRows) ? selectDataByRows(predicate, "^(?!-?\\d+[.,]?\\d*$|\\d{2}[./]\\d{2}[./]\\d{4}$).+", e -> e):
-                selectDataByColumns(predicate, "^(?!-?\\d+[.,]?\\d*$|\\d{2}[./]\\d{2}[./]\\d{4}$).+", e -> e);
-    }
-    private static LocalDate convertDate(String s) {
-        return LocalDate.parse(s, dateFormatter);
-    }
     public static void main(String[] args) {
         Table table1 = new Table();
         table1.readTableFromConsole();
-//        table1.sortTableByRows();
-//        table1.printTableInConsole();
-//        table1.sortTableByColumns();
         table1.printTableInConsole();
+        System.out.println();
     }
 }

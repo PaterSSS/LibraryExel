@@ -1,4 +1,4 @@
-package table;
+package table.structure;
 
 public enum TypeOfData {
     Number,
