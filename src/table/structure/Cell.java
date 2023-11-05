@@ -31,10 +31,6 @@ public class Cell implements Comparable<Cell> {
         return length;
     }
 
-    public TypeOfData getType() {
-        return type;
-    }
-
     public void setData(String data) {
         this.data = data;
         setParams();
